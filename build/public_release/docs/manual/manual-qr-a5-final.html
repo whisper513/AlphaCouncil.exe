@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>电子说明书扫码领取卡｜A5白底定版</title>
+  <style>
+    /* A5 页面与白底定版样式 */
+    @page { size: A5; margin: 10mm; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: "Microsoft Yahei", "Segoe UI", Roboto, Arial, sans-serif;
+      color: #0f1d2a;
+      background: #ffffff; /* 白底 */
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .card {
+      background: #0f1d2a; /* 深蓝主体 */
+      color: #ffffff;
+      border: 1px solid #11233a;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(13, 51, 88, 0.22);
+      padding: 28px;
+    }
+    .logo-area { display:flex; justify-content:space-between; align-items:center; }
+    .brand { font-weight:800; font-size: 18px; letter-spacing: 0.5px; color:#ffffff; }
+    .partner { font-size: 12px; color:#b8c7da; }
+
+    .title { font-weight: 800; font-size: 26px; margin: 12px 0 6px; letter-spacing: 0.5px; color:#2b7cff; }
+    .tagline { color: #12854a; font-weight:600; font-size: 16px; }
+
+    .badge-row { margin-top: 8px; display:flex; gap: 8px; flex-wrap: wrap; }
+    .badge { background: #e7f6ed; color:#12854a; border: 1px dashed #a7d8b6; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; }
+
+    .section-title { margin-top: 14px; font-size: 14px; font-weight:700; color:#305578; letter-spacing:0.3px; }
+    .steps { display:flex; gap: 10px; margin-top: 8px; }
+    .step { flex:1; background:#f6f9fd; border:1px solid #e6eef7; border-radius:10px; padding:10px; }
+    .step .num { font-weight:800; color:#2b7cff; }
+    .step .text { font-size: 13px; }
+
+    .device-hint { margin: 14px 0; background:#fff; border:1px dashed #cbd7e6; border-radius:10px; padding:12px; }
+    .device-hint .title { font-size:14px; font-weight:700; color:#173e79; }
+    .device-hint .desc { font-size:12px; color:#4b6580; }
+    .device-plate { margin-top:8px; height:110px; border-radius:8px; background: repeating-linear-gradient( 45deg, #f6f9fd, #f6f9fd 10px, #eef5fb 10px, #eef5fb 20px ); display:flex; align-items:center; justify-content:center; color:#305578; font-size:12px; border:1px solid #e6eef7; }
+
+    .qr-area { margin: 16px 0; text-align:center; }
+    .qr-box { display:inline-block; padding:10px; background:#fff; border-radius:12px; border:1px solid #e6eef7; box-shadow:0 6px 16px rgba(13,51,88,0.08); }
+    .qr-box img { width: 240px; height: 240px; }
+    .qr-box.small img { width:160px; height:160px; }
+    .qr-caption { font-size: 12px; color:#b8c7da; margin-top: 6px; }
+
+    .cta { text-align:center; margin-top: 10px; }
+    .cta .btn { display:inline-block; background:#2b7cff; color:#fff; font-weight:700; border-radius:999px; padding:10px 18px; text-decoration:none; box-shadow:0 4px 12px rgba(43,124,255,0.35); }
+    .print-hide{ }
+
+    .tips { margin-top: 12px; font-size: 12px; color:#c7d2e3; }
+    .tips ul { margin: 6px 0; padding-left: 18px; }
+
+    .footer { margin-top: 10px; font-size: 12px; color:#b4c4d7; display:flex; justify-content:space-between; }
+    .footer .contact { font-weight:600; }
+    .link { font-size: 12px; color:#91d3ff; word-break: break-all; }
+
+    @media print {
+      .container { max-width: unset; padding: 0; }
+      .card { box-shadow: none; }
+      .cta .btn { box-shadow: none; }
+      .print-hide{ display:none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 将 FINAL_URL 替换为你的说明书落地页短链（当前为示例） -->
+  <div class="container">
+    <div class="card">
+      <div class="logo-area">
+        <div class="brand">品牌Logo / 产品名称</div>
+        <div class="partner">电子说明书｜云端自动更新</div>
+      </div>
+      <div class="title">电子说明书扫码领取卡（白底定版）</div>
+      <div class="tagline">需要说明书？请扫主机上的二维码</div>
+
+      <div class="badge-row">
+        <div class="badge">少纸多绿</div>
+        <div class="badge">自动更新</div>
+        <div class="badge">可搜索</div>
+        <div class="badge">PDF离线</div>
+      </div>
+
+      <div class="section-title">三步领取（设备端二维码）</div>
+      <div class="steps">
+        <div class="step"><div class="num">①</div><div class="text">在主机面板找到“说明书二维码贴纸”</div></div>
+        <div class="step"><div class="num">②</div><div class="text">用手机相机/微信扫一扫，对准贴纸二维码</div></div>
+        <div class="step"><div class="num">③</div><div class="text">自动匹配当前机型，获取电子说明书/PDF/视频</div></div>
+      </div>
+
+      <div class="device-hint">
+        <div class="title">贴纸位置示意</div>
+        <div class="desc">常见位置：操作面板右上角或“帮助/说明书”区域旁。请确保贴纸干净并保留周围留白。</div>
+        <div class="device-plate">主机面板 + 说明书二维码贴纸（示意占位）</div>
+      </div>
+
+      <div class="section-title">备用方式（卡片上的二维码/链接）</div>
+      <div class="qr-area">
+        <div class="qr-box small">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https%3A%2F%2Fexample.com%2Fmanual%3Fmodel%3DSMC50C" alt="备用二维码：无法扫码设备时使用" />
+        </div>
+        <div class="qr-caption">设备侧二维码不可用时，扫描此码或访问下方备用链接</div>
+        <div class="link">备用链接：https://example.com/manual?model=SMC50C</div>
+      </div>
+
+      <div class="cta"><a class="btn" href="https://example.com/manual?model=SMC50C" target="_blank">在手机查看</a><a class="btn print-hide" href="#" onclick="window.print();return false;" style="background:#12854a; box-shadow:0 4px 12px rgba(18,133,74,0.35); margin-left:8px;">打印为PDF</a><a class="btn print-hide" id="btnExportPNG" href="#" onclick="return false;" style="background:#173e79; box-shadow:0 4px 12px rgba(23,62,121,0.35); margin-left:8px;">导出PNG图片</a></div>
+
+      <div class="tips">
+        <ul>
+          <li>电子版自动更新，支持全文搜索与版本对比（最近更新：2025-10）。</li>
+          <li>隐私与合规：仅记录设备与版本信息，不采集个人敏感数据。</li>
+          <li>离线可用：支持下载PDF保存，在线版适配移动端与暗色模式。</li>
+        </ul>
+      </div>
+
+      <div class="footer">
+        <div class="contact">技术支持：400-XXX-XXXX｜support@yourdomain.com</div>
+        <div>版本：v1.0｜印刷规格：A5（148×210mm）｜边距10mm｜白底定版</div>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+  (function(){
+    const btn = document.getElementById('btnExportPNG');
+    if (!btn) return;
+    btn.addEventListener('click', async function(){
+      try {
+        const card = document.querySelector('.card');
+        const rect = card.getBoundingClientRect();
+        const clone = card.cloneNode(true);
+        // 隐藏远程图片以避免跨域污染画布（正式版可替换为本地二维码）
+        clone.querySelectorAll('img').forEach(img => { img.style.display = 'none'; });
+        // 收集当前页面内联样式（仅取第一个 <style>）
+        const styleTag = document.querySelector('head style');
+        const styles = styleTag ? styleTag.textContent : '';
+        const scale = 2; // 提高清晰度
+        const svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+          `<svg xmlns="http://www.w3.org/2000/svg" width="${rect.width*scale}" height="${rect.height*scale}" viewBox="0 0 ${rect.width} ${rect.height}">` +
+          `<foreignObject x="0" y="0" width="${rect.width}" height="${rect.height}">` +
+          `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${rect.width}px;height:${rect.height}px;background:#ffffff;">` +
+          `<style>${styles}</style>` + clone.outerHTML +
+          `</div>` +
+          `</foreignObject>` +
+          `</svg>`;
+        const svgBlob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(svgBlob);
+        const img = new Image();
+        img.onload = function(){
+          const canvas = document.createElement('canvas');
+          canvas.width = rect.width*scale;
+          canvas.height = rect.height*scale;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          canvas.toBlob(function(blob){
+            const out = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = out;
+            a.download = 'manual-qr-a5-final-white.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(out);
+          }, 'image/png');
+        };
+        img.onerror = function(){ alert('导出失败：SVG渲染错误'); };
+        img.src = url;
+      } catch (e) {
+        alert('导出失败，请尝试刷新页面或使用浏览器截图功能。');
+        console.error(e);
+      }
+    });
+  })();
+</script>
+</html>

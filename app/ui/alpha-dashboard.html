@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AlphaCouncil 实时分析仪表板（演示）</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#111a2c; --border:#1e2a42; --muted:#8aa0c2; --text:#e9efff;
+      --green:#2ecc71; --red:#ff6b6b; --blue:#4c8dff; --yellow:#f6c445; --purple:#a06cd5;
+      --radius:14px; --space:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,Arial}
+    .page{max-width:1280px;margin:0 auto;padding:20px}
+    header{display:flex;gap:12px;align-items:center;margin-bottom:16px}
+    .brand{font-weight:800;letter-spacing:.5px}
+    .pill{background:#0e1a30;border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:var(--space)}
+    .card h3{margin:0 0 8px 0;font-size:15px}
+    .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi{background:#0d1730;border:1px solid var(--border);border-radius:10px;padding:10px}
+    .kpi .label{color:var(--muted)}
+    .kpi .value{font-size:20px;font-weight:700}
+    .tag{display:inline-block;border:1px solid var(--border);background:#0d1730;color:var(--muted);border-radius:999px;padding:2px 8px;margin-right:6px}
+    .actions{display:flex;gap:8px;margin-left:auto}
+    button,select,input{background:#0d1730;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+    .cols-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .warn{color:var(--yellow)} .up{color:var(--green)} .down{color:var(--red)}
+    canvas{width:100%;height:200px;background:#0d1730;border:1px solid var(--border);border-radius:10px}
+    .mono{font-family:ui-monospace,Consolas,Menlo,monospace;color:#cfe1ff}
+    .status-bar{display:flex;gap:8px;margin-top:6px}
+    .pill-green{background:#0f2b1e;border-color:#21593f;color:#a7f0c4}
+    .pill-blue{background:#0f213a;border-color:#1e3a66;color:#bcd8ff}
+    .pill-gray{background:#0e1a30;border-color:#25324a;color:#9fb2d4}
+    .error-card{background:#2a1215;border:1px solid #6b1f24;color:#ffb3b8;border-radius:10px;padding:10px;display:none;margin-top:8px}
+    /* 工作流阶段样式 */
+    .section-title{font-weight:800;margin:16px 0 8px 0;display:flex;align-items:center;gap:8px}
+    .stage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .stage-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
+    .stage-card h4{margin:0 0 6px 0;font-size:14px;display:flex;align-items:center;gap:8px}
+    .stage-pill{border-radius:999px;padding:2px 8px;border:1px solid var(--border);font-size:12px}
+    .stage-pill.ok{background:#0f2b1e;border-color:#21593f;color:#a7f0c4}
+    .stage-pill.run{background:#0f213a;border-color:#1e3a66;color:#bcd8ff}
+    .stage-pill.fail{background:#2a1215;border-color:#6b1f24;color:#ffb3b8}
+    .small{font-size:12px;color:var(--muted)}
+    /* 顶部导航条 */
+    .topbar{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
+    .topbar .brand{font-weight:600;letter-spacing:0.2px}
+    .topbar nav{display:flex;gap:6px}
+    .topbar nav a{color:var(--text);text-decoration:none;padding:6px 10px;border-radius:8px}
+    .topbar nav a:hover{background:#0d1730}
+  </style>
+</head>
+  <body>
+  <div class="topbar">
+    <div class="brand">AlphaCouncil</div>
+    <nav>
+      <a href="alpha-dashboard.html">仪表板</a>
+      <a href="settings.html">设置</a>
+      <a href="login.html">登录</a>
+    </nav>
+  </div>
+  <div class="page">
+    <header>
+      <div class="brand">AlphaCouncil 实时分析仪表板</div>
+      <span class="pill">联网实时</span>
+      <div class="actions">
+        <input id="symbol" placeholder="代码示例：001203" value="001203"/>
+        
+        <select id="source">
+          <option value="http">HTTP轮询</option>
+          <option value="ws">WebSocket推送</option>
+        </select>
+        <button id="start">开始分析</button>
+        <button id="offline-analyze">离线分析</button>
+        <button id="import-csv">导入CSV</button>
+        <button id="daily-update-current" title="仅更新当前代码">仅更新当前</button>
+        <button id="daily-update-batch" title="批量更新清单">批量更新清单</button>
+        <label style="display:flex;align-items:center;gap:6px;">
+          <input id="auto-update-toggle" type="checkbox" />
+          <span class="pill">每日自动更新</span>
+          <input id="auto-update-time" type="time" value="09:00" style="width:120px"/>
+          <button id="apply-schedule">应用</button>
+        </label>
+      </div>
+      <div class="status-bar">
+        <span id="conn" class="pill pill-gray">数据源：未连接</span>
+        <span id="last-update" class="pill pill-gray">最近更新：—</span>
+        <span id="du-status" class="pill pill-gray" title="增量更新最近状态">增量：—</span>
+        <span id="ws-status" class="pill pill-gray">WS：—</span>
+      </div>
+    </header>
+
+    <!-- 工作流：四阶段分析 -->
+    <div id="workflow">
+      <div class="section-title">
+        <span>分阶段分析工作流</span>
+        <span id="wf-timer" class="pill pill-gray">计时：00:00</span>
+        <span id="wf-sym-label" class="pill pill-blue" style="margin-left:auto">标的：001203</span>
+        <button id="wf-start">启动分阶段分析</button>
+      </div>
+      <!-- 阶段一：并行专业分析 -->
+      <div class="stage-grid">
+        <div class="stage-card">
+          <h4>技术面 <span id="wf-tech-status" class="stage-pill">待机</span></h4>
+          <div id="wf-tech" class="mono small">—</div>
+        </div>
+        <div class="stage-card">
+          <h4>基本面 <span id="wf-funda-status" class="stage-pill">待机</span></h4>
+          <div id="wf-funda" class="mono small">—</div>
+        </div>
+        <div class="stage-card">
+          <h4>情绪/新闻 <span id="wf-news-status" class="stage-pill">待机</span></h4>
+          <div id="wf-news" class="mono small">—</div>
+        </div>
+      </div>
+      <!-- 阶段一：策略整合 -->
+      <div class="section-title"><span>阶段一：策略整合</span> <span id="wf-strat-status" class="stage-pill">待机</span></div>
+      <div class="stage-card"><div id="wf-strat" class="mono">—</div></div>
+      <!-- 阶段二：风控评估 -->
+      <div class="section-title"><span>阶段二：风控评估</span> <span id="wf-risk-status" class="stage-pill">待机</span></div>
+      <div class="stage-card"><div id="wf-risk" class="mono">—</div></div>
+      <!-- 阶段四：最终决策 -->
+      <div class="section-title"><span>最终决策</span> <span id="wf-final-status" class="stage-pill">待机</span></div>
+      <div class="stage-card"><div id="wf-final" class="mono" style="font-weight:700">—</div></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="label">最新价</div><div id="last" class="value">--</div></div>
+      <div class="kpi"><div class="label">涨跌幅</div><div id="chg" class="value">--</div></div>
+      <div class="kpi"><div class="label">波动率(年化)</div><div id="vol" class="value">--</div></div>
+    </div>
+
+    <div class="grid" style="margin-top:16px">
+      <div class="card">
+        <h3>研究综述与结论</h3>
+        <div id="summary" class="mono">等待数据…</div>
+        <div id="error-card" class="error-card"></div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="tag">LLM参考</span>
+          <span class="pill">请在“设置”页面配置接口与模型</span>
+          <button id="llm-run">生成参考结论</button>
+          <button id="export-md">导出Markdown</button>
+          <button id="export-json">导出JSON</button>
+          <button id="open-settings" title="打开设置页面">设置</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>纠偏与稳定性分析</h3>
+        <div id="stability" class="mono">—</div>
+      </div>
+
+      <div class="card">
+        <h3>资金热度与情绪</h3>
+        <div id="heat" class="mono">—</div>
+      </div>
+
+      <div class="card">
+        <h3>价位区间与支撑/阻力</h3>
+        <div id="levels" class="mono">—</div>
+      </div>
+
+      <div class="card">
+        <h3>基本面四维分析</h3>
+        <canvas id="radar"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>仓位与操作建议</h3>
+        <div id="advice" class="mono">—</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // 工具函数：SMA/EMA/RSI
+    function sma(arr, n){ if(arr.length<n) return null; let s=0; for(let i=arr.length-n;i<arr.length;i++) s+=arr[i]; return s/n; }
+    function ema(arr, n){ if(arr.length<n) return null; const k=2/(n+1); let e=arr[arr.length-n]; for(let i=arr.length-n+1;i<arr.length;i++) e=arr[i]*k + e*(1-k); return e; }
+    function rsi(prices, n=14){ if(prices.length<n+1) return null; let gains=0,losses=0; for(let i=prices.length-n;i<prices.length;i++){ const d=prices[i]-prices[i-1]; if(d>0) gains+=d; else losses-=d; } const rs=gains/(losses||1e-6); return 100-100/(1+rs); }
+
+    // 基本面雷达（演示：随机生成/可接入数据）
+    function drawRadar(canvas, vals){ const ctx=canvas.getContext('2d'); const w=canvas.width, h=canvas.height; ctx.clearRect(0,0,w,h);
+      const cx=w/2, cy=h/2, R=Math.min(w,h)/2-20; const labels=['盈利','成长','估值','安全','治理'];
+      ctx.strokeStyle='#26436f'; for(let r=0;r<5;r++){ ctx.beginPath(); for(let i=0;i<5;i++){ const a=2*Math.PI*i/5; const x=cx+R*(r+1)/5*Math.cos(a), y=cy+R*(r+1)/5*Math.sin(a); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.closePath(); ctx.stroke(); }
+      ctx.fillStyle='rgba(76,141,255,.25)'; ctx.beginPath(); for(let i=0;i<5;i++){ const a=2*Math.PI*i/5; const x=cx+R*vals[i]*Math.cos(a), y=cy+R*vals[i]*Math.sin(a); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#8aa0c2'; ctx.font='12px system-ui'; for(let i=0;i<5;i++){ const a=2*Math.PI*i/5; const x=cx+(R+10)*Math.cos(a), y=cy+(R+10)*Math.sin(a); ctx.fillText(labels[i],x-12,y+4);} }
+
+    // 数据引擎：模拟/推送
+    const engine={
+      mode:'push', source:'http', url:'', interval:1200,
+      prices:[], volumes:[], last:NaN, timer:null, ws:null, lastTs:0, wsRetry:0,
+      start(){ this.stop(); this.mode='push'; this.prices=[]; this.volumes=[];
+        const sym=(document.getElementById('symbol').value||'001203').trim();
+        const srcSel=document.getElementById('source'); this.source=srcSel?srcSel.value:'http';
+        const cfg=JSON.parse(localStorage.getItem(STORE)||'{}');
+        this.interval = (this.source==='http') ? (+cfg.interval||1200) : 0;
+        this.url = this.source==='http' ? `http://localhost:8788/data/quote?symbol=${sym}` : `ws://localhost:8789/ws/quote?symbol=${sym}`;
+        updateStatus();
+        saveConfig({ symbol:sym, source:this.source, interval:this.interval });
+        if(this.source==='http'){
+          const poll=async()=>{
+            try{
+              const res=await fetch(this.url,{cache:'no-store'}); const payload=await res.json(); this.updateFromPayload(payload);
+            }catch(err){ console.warn('HTTP数据源错误:', err); }
+          };
+          poll(); this.timer=setInterval(poll, this.interval||1200);
+        } else if(this.source==='ws'){
+            try{ if(this.ws){ try{ this.ws.close(); }catch(e){} }
+              this.ws=new WebSocket(this.url);
+              this.ws.onopen=()=>{ console.log('WS连接成功'); updateStatus(); };
+              this.ws.onmessage=(ev)=>{ try{ const payload=JSON.parse(ev.data); this.updateFromPayload(payload); }catch(e){ console.warn('WS消息解析失败', e); } };
+              this.ws.onclose=()=>{ console.warn('WS连接关闭'); updateStatus(); this.wsRetry++; if(this.wsRetry>=2){ console.warn('WS多次失败，自动回退HTTP'); fallbackToHttp(); } else { setTimeout(()=>{ if(this.source==='ws') this.start(); }, 2000); } };
+              this.ws.onerror=(e)=>{ console.warn('WS错误', e); updateStatus(); this.wsRetry++; if(this.wsRetry>=2){ console.warn('WS多次失败，自动回退HTTP'); fallbackToHttp(); } };
+            }catch(err){ console.warn('WS数据源错误:', err); }
+        }
+      },
+      stop(){ clearInterval(this.timer); this.timer=null; if(this.ws){ try{ this.ws.close(); }catch(e){} this.ws=null; } },
+      updateFromPayload(payload){
+        let price = Number(payload.last);
+        let vol = Number(payload.volume);
+        if(!isFinite(price)) price = Number(payload.price ?? payload.close);
+        if(!isFinite(vol)) vol = Number(payload.vol ?? payload.turnover ?? 0);
+        if(!isFinite(price)) return; this.last=+price.toFixed(2);
+        this.prices.push(this.last); this.volumes.push(isFinite(vol)?vol:0);
+        if(this.prices.length>300){ this.prices.shift(); this.volumes.shift(); }
+        const symEl=document.getElementById('symbol'); if(payload.symbol && symEl) symEl.value=payload.symbol;
+        render();
+      }
+    };
+
+    // 渲染逻辑
+    const el={ last:document.getElementById('last'), chg:document.getElementById('chg'), vol:document.getElementById('vol'),
+      summary:document.getElementById('summary'), stability:document.getElementById('stability'), heat:document.getElementById('heat'), levels:document.getElementById('levels'), advice:document.getElementById('advice'), radar:document.getElementById('radar'),
+      conn:document.getElementById('conn'), lastUpdate:document.getElementById('last-update'), wsStatus:document.getElementById('ws-status'), exportMd:document.getElementById('export-md'), exportJson:document.getElementById('export-json') };
+
+    function fmtTime(ts){ if(!ts) return '—'; const d=new Date(ts); const h=String(d.getHours()).padStart(2,'0'); const m=String(d.getMinutes()).padStart(2,'0'); const s=String(d.getSeconds()).padStart(2,'0'); return `${h}:${m}:${s}`; }
+    function updateStatus(){ const source=document.getElementById('source').value; const modeText=(source==='http'?'HTTP轮询':'WebSocket推送'); el.conn.textContent=`数据源：${modeText}`; el.conn.className='pill pill-blue'; el.lastUpdate.textContent=`最近更新：${fmtTime(engine.lastTs)}`; el.lastUpdate.className=`pill ${engine.lastTs?'pill-green':'pill-gray'}`; const wsOk=!!(engine.ws && engine.ws.readyState===1); el.wsStatus.textContent=engine.ws? (wsOk?'WS：已连接':'WS：未连接') : 'WS：—'; el.wsStatus.className=`pill ${wsOk?'pill-green':'pill-gray'}`; }
+    function annualVol(prices){ if(prices.length<30) return null; // 近30根的日收益标准差×sqrt(250)
+      let rets=[]; for(let i=1;i<prices.length;i++){ rets.push((prices[i]-prices[i-1])/prices[i-1]); }
+      const n=Math.min(60,rets.length); rets=rets.slice(-n); const avg=rets.reduce((a,b)=>a+b,0)/n; const varr=rets.reduce((a,b)=>a+Math.pow(b-avg,2),0)/n; return Math.sqrt(varr)*Math.sqrt(250); }
+
+    const state={};
+    function render(){ const p=engine.prices; const last=engine.last; if(!last){ updateStatus(); return; }
+      const p20=sma(p,20)||last, p60=sma(p,60)||last, e20=ema(p,20)||last; const rsi14=rsi(p,14)||50; const vol=annualVol(p)||0.25;
+      // 涨跌幅（相对60SMA）
+      const chg=((last-p60)/p60*100).toFixed(2)+'%';
+      el.last.textContent=last.toFixed(2);
+      el.chg.textContent=chg; el.chg.className='value '+(last>=p60?'up':'down');
+      el.vol.textContent=(vol*100).toFixed(1)+'%';
+
+      // 价位区间与支撑阻力（布林+前高前低）
+      const n=Math.min(40,p.length); const slice=p.slice(-n); const avg=sma(slice,n)||last; const std=Math.sqrt(slice.reduce((s,x)=>s+Math.pow(x-avg,2),0)/n)||0.1;
+      const low=(avg-2*std).toFixed(2), high=(avg+2*std).toFixed(2);
+      const support=(Math.min(...slice.slice(0,Math.floor(n/2)))).toFixed(2);
+      const resist=(Math.max(...slice.slice(Math.floor(n/2))).toFixed(2));
+      el.levels.textContent=`建议观察区间：${low} ~ ${high} ｜ 支撑：${support} ｜ 阻力：${resist}`;
+
+      // 情绪与热度（基于成交量与RSI）
+      const vAvg=sma(engine.volumes,20)||6000; const vNow=engine.volumes[engine.volumes.length-1]||vAvg; const heat=((vNow/vAvg*0.6)+(rsi14/100*0.4));
+      el.heat.textContent=`量能：${vNow}（基准 ${Math.round(vAvg)}） ｜ RSI14：${rsi14.toFixed(1)} ｜ 热度指数：${(heat*100).toFixed(0)}%`;
+
+      // 纠偏与稳定性（趋势偏离 + 回归速度）
+      const trendBias=((last-e20)/e20*100).toFixed(2);
+      const revertSpeed=Math.abs((e20-(p[p.length-2]||e20))/e20*100*60).toFixed(2);
+      el.stability.textContent=`趋势偏离：${trendBias}% ｜ 回归速度(近1min)：${revertSpeed}%/min ｜ 平滑均线：EMA20=${e20.toFixed(2)}`;
+
+      // 研究综述（规则生成）
+      const tone = last>p60 ? '偏强' : '偏弱';
+      el.summary.textContent = `标的(${document.getElementById('symbol').value})：价格 ${last.toFixed(2)}，相对SMA60涨跌 ${chg}，波动率 ${(vol*100).toFixed(1)}%。量能 ${vNow} 对比均值 ${Math.round(vAvg)}，情绪 ${tone}。建议在 ${low}~${high} 区间内分步操作，关注 ${support}/${resist} 关键位。`;
+
+      // 仓位与操作建议（简规则）
+      const pos = heat>1.05 && last>e20 ? 0.7 : heat<0.9 && last<e20 ? 0.3 : 0.5;
+      const risk = vol>0.35 ? '高' : vol>0.25 ? '中' : '低';
+      el.advice.textContent = `建议仓位：${Math.round(pos*100)}% ｜ 风险：${risk} ｜ 触发条件：跌破支撑${support}减仓、突破阻力${resist}轻仓追随并设回落止损。`;
+
+      // 基本面雷达（演示：固定与微扰）
+      const base=[0.7,0.55,0.45,0.65,0.6]; const jitter=base.map(v=>Math.min(1,Math.max(0,v+(Math.random()-0.5)*0.06)));
+      drawRadar(el.radar, jitter);
+
+      // 保存状态供LLM参考
+      Object.assign(state, { last, p20, p60, e20, rsi14, vol, chg, low, high, support, resist, vAvg, vNow, heat, trendBias, revertSpeed }); engine.lastTs=Date.now(); updateStatus();
+    }
+
+    document.getElementById('start').addEventListener('click',()=>{ engine.start(); });
+    // 自动开始将在配置加载后触发
+    // 自适应 canvas 尺寸（使绘制更清晰）
+    function resize(){ const c=el.radar; const rect=c.getBoundingClientRect(); c.width=Math.floor(rect.width*2); c.height=Math.floor(rect.height*2); }
+    window.addEventListener('resize',()=>{ resize(); drawRadar(el.radar,[0.6,0.6,0.6,0.6,0.6]); }); resize();
+
+    // 配置持久化
+    const STORE='AlphaCouncil.cfg.v1';
+    function saveConfig(part){ const prev=JSON.parse(localStorage.getItem(STORE)||'{}'); const next={...prev,...part}; localStorage.setItem(STORE, JSON.stringify(next)); }
+    async function loadConfig(){
+      // 本地缓存（旧逻辑兼容）
+      const cfgLocal=JSON.parse(localStorage.getItem(STORE)||'{}');
+      let cfgServer={};
+      try{
+        const res=await fetch('http://localhost:8788/config',{cache:'no-store'});
+        if(res.ok){ cfgServer=await res.json(); }
+      }catch(e){ /* 数据网关未启动时忽略 */ }
+      const cfg={...cfgLocal, ...cfgServer};
+      const sym=document.getElementById('symbol'); const srcSel=document.getElementById('source');
+      if(cfg.dashboardDefaultSymbol) sym.value=cfg.dashboardDefaultSymbol; else if(cfgLocal.symbol) sym.value=cfgLocal.symbol;
+      if(cfg.source) srcSel.value=cfg.source;
+      // 将统一配置写回本地缓存，避免旧值覆盖
+      saveConfig({ symbol: sym.value, source: srcSel.value });
+      const wf=document.getElementById('workflow'); const simple=(cfg.dashboardSimple===true || cfg.dashboardSimple==='true'); if(simple && wf) wf.style.display='none';
+      // 写回缓存
+      // LLM配置由设置页管理，仪表板不再显示输入框
+    }
+
+    // 切换源或代码时，直接重启引擎并保存配置
+    document.getElementById('source').addEventListener('change',()=>{
+      const symNow=(document.getElementById('symbol').value||'001203').trim();
+      saveConfig({ symbol:symNow, source:document.getElementById('source').value });
+      engine.start();
+    });
+    document.getElementById('symbol').addEventListener('change',()=>{
+      const symNow=(document.getElementById('symbol').value||'001203').trim();
+      saveConfig({ symbol:symNow });
+      engine.start();
+    });
+
+    function fallbackToHttp(){
+      const symNow=(document.getElementById('symbol').value||'001203').trim();
+      document.getElementById('source').value='http';
+      saveConfig({ symbol:symNow, source:'http' });
+      engine.wsRetry=0; engine.start();
+    }
+
+    // 加载配置后自动启动联网采集
+    (async()=>{ await loadConfig(); engine.start(); })();
+
+    // LLM参考：通过本地代理 /llm 转发到外部API
+    let llmBusy=false;
+    async function runLLM(){
+      if(llmBusy) return; llmBusy=true;
+      const btn=document.getElementById('llm-run'); const old=btn.textContent; btn.disabled=true; btn.textContent='生成中…';
+      const cfg=JSON.parse(localStorage.getItem(STORE)||'{}');
+      const endpoint = (cfg.llmEndpoint||'').trim();
+      const model = (cfg.llmModel||'').trim();
+      if(!endpoint || !model){ alert('请在设置页面填写 LLM 接口与模型名'); btn.disabled=false; btn.textContent=old; llmBusy=false; return; }
+      const symbol = document.getElementById('symbol').value.trim();
+      const prompt = `你是量化分析助手。请基于以下实时指标给出客观结论，避免过度拟合：\n`+
+        `代码: ${symbol}\n`+
+        `最新价: ${state.last?.toFixed?.(2)}\n涨跌幅(相对SMA60): ${state.chg}\n波动率(年化): ${(state.vol*100).toFixed(1)}%\n`+
+        `均线: SMA20=${state.p20?.toFixed?.(2)}, SMA60=${state.p60?.toFixed?.(2)}, EMA20=${state.e20?.toFixed?.(2)}\n`+
+        `区间: ${state.low} ~ ${state.high}, 支撑: ${state.support}, 阻力: ${state.resist}\n`+
+        `量能: 当前=${state.vNow}, 均值=${Math.round(state.vAvg||0)}, RSI14=${state.rsi14?.toFixed?.(1)}, 热度指数=${(state.heat*100).toFixed(0)}%\n`+
+        `稳定性: 趋势偏离=${state.trendBias}%, 回归速度=${state.revertSpeed}%/min\n`+
+        `请输出: (1) 简洁结论 (2) 风险点 (3) 操作建议，控制在150字内。`;
+
+      const body = {
+        endpoint,
+        forward_body: {
+          model,
+          messages: [
+            { role: 'system', content: '你是严谨的证券分析助手，务必中立、清晰、避免夸大。' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.2
+        }
+      };
+      el.summary.textContent = 'LLM参考生成中…';
+      try{
+        const res = await fetch('http://localhost:8787/llm', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+        if(!res.ok){
+          let msg=''; let reason='';
+          try{ const j=await res.json(); msg=j.error||j.message||JSON.stringify(j); }catch{ msg=await res.text(); }
+          const sc=res.status;
+          if(sc===429){ reason='API 次数用完（配额限制）'; }
+          else if(sc===401||sc===403){ reason='密钥无效或权限不足'; }
+          else if(sc===502||sc===504){ reason='网络问题或上游不可达'; }
+          else { reason='调用错误'; }
+          el.summary.textContent = `LLM参考失败：${reason} ｜ ${msg}`;
+        } else {
+          const json = await res.json();
+          const text = json?.choices?.[0]?.message?.content || json?.output || JSON.stringify(json);
+          el.summary.textContent = text;
+        }
+      }catch(e){
+        el.summary.textContent = 'LLM参考调用失败（网络问题）：'+e;
+      } finally {
+        btn.disabled=false; btn.textContent=old; llmBusy=false;
+      }
+    }
+    document.getElementById('llm-run').addEventListener('click', runLLM);
+    document.getElementById('open-settings').addEventListener('click',()=>{ window.open('settings.html','_blank'); });
+    // 导出功能
+    function exportMarkdown(){ const lines=[
+      `# AlphaCouncil 研究报告`,
+      `标的：${document.getElementById('symbol').value}`,
+      `时间：${fmtTime(engine.lastTs)}`,
+      `价格：${state.last?.toFixed?.(2)}`,
+      `SMA20：${state.p20?.toFixed?.(2)}  SMA60：${state.p60?.toFixed?.(2)}`,
+      `EMA20：${state.e20?.toFixed?.(2)}  RSI14：${state.rsi14?.toFixed?.(1)}`,
+      `区间：${state.low} ~ ${state.high}  支撑：${state.support}  阻力：${state.resist}`,
+      `年化波动率：${(state.vol*100)?.toFixed?.(2)}%`,
+      '',
+      '## 参考结论',
+      el.summary.textContent||'（尚未生成）'
+    ]; const blob=new Blob([lines.join('\n')],{type:'text/markdown;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`AlphaCouncil_${document.getElementById('symbol').value}_${Date.now()}.md`; a.click(); URL.revokeObjectURL(a.href); }
+    function exportJSON(){ const payload={ symbol:document.getElementById('symbol').value, ts:engine.lastTs, price:state.last||null, indicators:{ p20:state.p20, p60:state.p60, e20:state.e20, rsi14:state.rsi14, vol:state.vol, heat:state.heat, low:state.low, high:state.high, support:state.support, resist:state.resist, vAvg:state.vAvg, vNow:state.vNow, trendBias:state.trendBias, revertSpeed:state.revertSpeed }, summary:el.summary.textContent||'' }; const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`AlphaCouncil_${document.getElementById('symbol').value}_${Date.now()}.json`; a.click(); URL.revokeObjectURL(a.href); }
+    el.exportMd.addEventListener('click', exportMarkdown);
+    el.exportJson.addEventListener('click', exportJSON);
+
+    // 一键增量更新（简洁流程：点击即在后台启动）
+    // 增量更新：当前/批量 + 状态轮询 + 错误卡片
+    let duBusy=false;
+    const duStatusEl=document.getElementById('du-status');
+    const errCard=document.getElementById('error-card');
+    function showError(msg){ errCard.textContent=msg; errCard.style.display='block'; setTimeout(()=>{ errCard.style.display='none'; }, 6000); }
+    async function runDailyUpdate(mode){ if(duBusy) return; duBusy=true; const btn=mode==='current'?document.getElementById('daily-update-current'):document.getElementById('daily-update-batch'); const old=btn.textContent; btn.disabled=true; btn.textContent='更新中…';
+      try{
+        const symbol=(document.getElementById('symbol').value||'').trim();
+        const params=new URLSearchParams({ sleep:'15' });
+        if(mode==='current' && symbol) params.set('symbols', symbol);
+        const url=`http://localhost:8788/data/run_daily_update?${params.toString()}`;
+        const res=await fetch(url, { method:'GET' }); const j=await res.json();
+        if(j.status==='started'){
+          alert(`已启动增量更新，PID=${j.pid}\n日志：${j.log_path}`);
+          duStatusEl.textContent='增量：进行中…'; duStatusEl.className='pill pill-blue';
+        } else {
+          showError('启动失败：'+(j.error||JSON.stringify(j)));
+        }
+      }catch(e){ showError('调用失败：'+e); }
+      finally{ btn.disabled=false; btn.textContent=old; duBusy=false; }
+    }
+    document.getElementById('daily-update-current').addEventListener('click', ()=>runDailyUpdate('current'));
+    document.getElementById('daily-update-batch').addEventListener('click', ()=>runDailyUpdate('batch'));
+
+    // 轮询最近一次摘要
+    async function refreshDUStatus(){
+      try{
+        const res=await fetch('http://localhost:8788/data/daily_update_status',{cache:'no-store'});
+        if(res.status===404){ duStatusEl.textContent='增量：—'; duStatusEl.className='pill pill-gray'; return; }
+        const j=await res.json();
+        const end=j.end_ts? new Date(j.end_ts*1000): null;
+        const timeStr=end? `${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}` : '—';
+        const ok=j.ok||0, fail=j.fail||0;
+        duStatusEl.textContent=`增量：成功${ok} 失败${fail} ｜ ${timeStr}`;
+        duStatusEl.title=j.log_path||'';
+        duStatusEl.className=`pill ${fail? 'pill-blue':'pill-green'}`;
+      }catch(e){ duStatusEl.textContent='增量：状态获取失败'; duStatusEl.className='pill pill-gray'; }
+    }
+    setInterval(refreshDUStatus, 5000); refreshDUStatus();
+
+    // 自动更新开关
+    async function applySchedule(){
+      const enable=document.getElementById('auto-update-toggle').checked;
+      const time=document.getElementById('auto-update-time').value||'09:00';
+      try{
+        const url=`http://localhost:8788/data/schedule/toggle?enable=${enable}&time=${encodeURIComponent(time)}`;
+        const res=await fetch(url); const j=await res.json();
+        if(j.error){ showError('计划任务失败：'+j.error); }
+        else{ alert(`计划任务 ${enable?'已启用':'已关闭'}${enable? ' ｜ 时间 '+time:''}`); }
+      }catch(e){ showError('计划任务调用失败：'+e); }
+    }
+    document.getElementById('apply-schedule').addEventListener('click', applySchedule);
+    async function initScheduleState(){ try{ const res=await fetch('http://localhost:8788/data/schedule/status'); const j=await res.json(); document.getElementById('auto-update-toggle').checked=!!j.enabled; }catch(e){} }
+    initScheduleState();
+  </script>
+  <footer id="page-footer" style="margin-top:16px;padding:12px 16px;font-size:12px;color:#666;text-align:center;border-top:1px solid #eee;">
+    © 2025 AlphaCouncil · 开发者：Songzhang
+  </footer>
+<script>
+    // —— 工作流：分阶段分析 ——
+    const wf={
+      timer:null, startTs:0,
+      el:{
+        timer:document.getElementById('wf-timer'), symLabel:document.getElementById('wf-sym-label'),
+        tech:document.getElementById('wf-tech'), techSt:document.getElementById('wf-tech-status'),
+        funda:document.getElementById('wf-funda'), fundaSt:document.getElementById('wf-funda-status'),
+        news:document.getElementById('wf-news'), newsSt:document.getElementById('wf-news-status'),
+        strat:document.getElementById('wf-strat'), stratSt:document.getElementById('wf-strat-status'),
+        risk:document.getElementById('wf-risk'), riskSt:document.getElementById('wf-risk-status'),
+        final:document.getElementById('wf-final'), finalSt:document.getElementById('wf-final-status')
+      }
+    };
+    function wfSet(el, text){ el.textContent=text; }
+    function wfStatus(el, s){ el.textContent=s; el.className='stage-pill '+(s==='进行中'?'run':(s==='完成'?'ok':(s==='失败'?'fail':''))); }
+    function wfTick(){ const sec=Math.floor((Date.now()-wf.startTs)/1000); const m=String(Math.floor(sec/60)).padStart(2,'0'); const s=String(sec%60).padStart(2,'0'); wf.el.timer.textContent=`计时：${m}:${s}`; }
+    function wfUpdateSymbolLabel(){ const sym=(document.getElementById('symbol').value||'').trim(); if(wf.el.symLabel){ wf.el.symLabel.textContent=`标的：${sym||'未设置'}`; } }
+
+    async function fetchJson(url){
+      const res=await fetch(url,{cache:'no-store'});
+      const ct=res.headers.get('Content-Type')||''; const isJson=ct.includes('application/json');
+      if(!res.ok){
+        let msg=''; let j=null; if(isJson){ try{ j=await res.json(); msg=j?.error||j?.note||''; }catch{} }
+        if(!msg){ msg=await res.text(); }
+        const sc=res.status;
+        const reason = sc===429 ? 'API 次数用完（配额限制）' : (sc===401||sc===403 ? '密钥无效或权限不足' : ((sc===502||sc===504) ? '网络问题或上游不可达' : '调用错误'));
+        throw new Error(`${reason} ｜ ${msg}`);
+      }
+      return isJson? await res.json() : JSON.parse(await res.text());
+    }
+    function closesFromRows(rows){ const arr=(rows||[]).map(r=>Number(r.close||r.price||r.last||0)).filter(x=>isFinite(x)); return arr; }
+
+    async function stage1(symbol){
+      // 并行：技术面/基本面/新闻
+      wfStatus(wf.el.techSt,'进行中'); wfStatus(wf.el.fundaSt,'进行中'); wfStatus(wf.el.newsSt,'进行中');
+      const base='http://localhost:8788';
+      const tPromise=(async()=>{
+        try{
+          // 优先本地历史，失败则外部
+          let j=await fetchJson(`${base}/data/history_local?symbol=${encodeURIComponent(symbol)}&limit=300`).catch(()=>null);
+          if(!j){ j=await fetchJson(`${base}/data/history?symbol=${encodeURIComponent(symbol)}`); }
+          const prices=closesFromRows(j.rows||j.data||[]);
+          const last=prices[prices.length-1]; const p20=sma(prices,20)||last; const p60=sma(prices,60)||last; const e20=ema(prices,20)||last; const r=annualVol(prices)||0.25;
+          const chg=((last-p60)/p60*100).toFixed(2)+'%';
+          wfSet(wf.el.tech, `最新价 ${last?.toFixed?.(2)} ｜ SMA20 ${p20?.toFixed?.(2)} ｜ SMA60 ${p60?.toFixed?.(2)} ｜ EMA20 ${e20?.toFixed?.(2)} ｜ 年化波动 ${(r*100).toFixed(1)}% ｜ 相对SMA60 ${chg}`);
+          wfStatus(wf.el.techSt,'完成');
+          return {prices,last,p20,p60,e20,vol:r,chg};
+        }catch(e){ wfSet(wf.el.tech, '技术面获取失败：'+e); wfStatus(wf.el.techSt,'失败'); return {error:e}; }
+      })();
+
+      const fPromise=(async()=>{
+        try{
+          const j=await fetchJson(`${base}/data/fundamentals?symbol=${encodeURIComponent(symbol)}`);
+          wfSet(wf.el.funda, `名称 ${j.Name||j.Symbol||symbol} ｜ 行业 ${j.Industry||'—'} ｜ 市值 ${j.MarketCapitalization||'—'} ｜ PE ${j.PERatio||'—'} ｜ EPS ${j.EPS||'—'} ｜ 股息率 ${j.DividendYield||'—'} ｜ ROE ${j.ROE||'—'} ｜ 资产负债率 ${j.DebtToEquity||'—'}`);
+          wfStatus(wf.el.fundaSt,'完成');
+          return j;
+        }catch(e){ wfSet(wf.el.funda, '基本面获取失败：'+e); wfStatus(wf.el.fundaSt,'失败'); return {error:e}; }
+      })();
+
+      const nPromise=(async()=>{
+        try{
+          const j=await fetchJson(`${base}/data/news?symbol=${encodeURIComponent(symbol)}`);
+          const items=(j.items||[]).slice(0,5).map(x=>`• ${x.title}（${x.source}｜${x.sentiment??'—'}）`).join('\n')||'—';
+          wfSet(wf.el.news, items); wfStatus(wf.el.newsSt,'完成');
+          return j;
+        }catch(e){ wfSet(wf.el.news, '新闻获取失败：'+e); wfStatus(wf.el.newsSt,'失败'); return {error:e}; }
+      })();
+
+      const [tech,funda,news]=await Promise.all([tPromise,fPromise,nPromise]);
+      return {tech,funda,news};
+    }
+
+    function stage2(analysis){ wfStatus(wf.el.stratSt,'进行中');
+      const t=analysis.tech||{}; const f=analysis.funda||{}; const prices=t.prices||[]; const last=t.last||prices[prices.length-1];
+      const tone= last>t.p60 ? '偏强' : '偏弱';
+      const divY=parseFloat(f.DividendYield||0)||0; const pe=parseFloat(f.PERatio||0)||0; const growth=(parseFloat(f.EPS||0)||0);
+      const score = (last>t.e20?1:0) + (last>t.p60?1:0) + (divY>0.02?1:0) + (pe>0 && pe<25?1:0) + (growth>0?1:0);
+      const pos = score>=4 ? 0.7 : score>=3 ? 0.5 : 0.3;
+      const n=Math.min(20, prices.length||20); const slice=prices.slice(-n); const avg=sma(slice,n)||last; const std=Math.sqrt(slice.reduce((s,x)=>s+Math.pow(x-avg,2),0)/n)||0.1;
+      const low=(avg-2*std).toFixed(2), high=(avg+2*std).toFixed(2);
+      const text=`动量：${tone} ｜ 估值PE：${pe||'—'} ｜ 股息率：${(divY*100).toFixed(1)}% ｜ EPS：${growth||'—'} ｜ 建议仓位：${Math.round(pos*100)}% ｜ 观察区间：${low} ~ ${high}`;
+      wfSet(wf.el.strat, text); wfStatus(wf.el.stratSt,'完成');
+      return {pos, low, high};
+    }
+
+    function stage3(analysis, strat){ wfStatus(wf.el.riskSt,'进行中');
+      const t=analysis.tech||{}; const last=t.last||0; const vol=t.vol||0.25; const risk = vol>0.35? '高' : vol>0.25? '中' : '低';
+      const stop = (last* (risk==='高'? 0.93 : risk==='中'? 0.95 : 0.97)).toFixed(2);
+      const take = (last* (risk==='高'? 1.05 : risk==='中'? 1.04 : 1.03)).toFixed(2);
+      const text=`风险等级：${risk} ｜ 年化波动 ${(vol*100).toFixed(1)}% ｜ 建议止损：${stop} ｜ 目标获利：${take}`;
+      wfSet(wf.el.risk, text); wfStatus(wf.el.riskSt,'完成');
+      return {risk, stop, take};
+    }
+
+    function stage4(symbol, analysis, strat, risk){ wfStatus(wf.el.finalSt,'进行中');
+      const last=analysis.tech?.last||NaN; const posPct=Math.round(strat.pos*100);
+      const tone = last>analysis.tech.p60? '偏强' : '偏弱';
+      const final=`标的(${symbol})：价格 ${last?.toFixed?.(2)}，趋势 ${tone}。建议仓位 ${posPct}% ，观察区间 ${strat.low}~${strat.high}。若跌破 ${risk.stop} 及时减仓，突破目标 ${risk.take} 轻仓跟随并动态止盈。`;
+      wfSet(wf.el.final, final); wfStatus(wf.el.finalSt,'完成');
+    }
+
+    async function runWorkflow(){
+      const symbol=(document.getElementById('symbol').value||'').trim(); if(!symbol){ alert('请填写股票代码'); return; }
+      wfUpdateSymbolLabel();
+      wf.startTs=Date.now(); clearInterval(wf.timer); wf.timer=setInterval(wfTick, 1000); wfTick();
+      try{
+        const analysis=await stage1(symbol);
+        const strat=stage2(analysis);
+        const risk=stage3(analysis, strat);
+        stage4(symbol, analysis, strat, risk);
+      }catch(e){ showError('工作流执行失败：'+e); }
+    }
+    document.getElementById('wf-start').addEventListener('click', runWorkflow);
+    document.getElementById('symbol').addEventListener('change', wfUpdateSymbolLabel);
+    wfUpdateSymbolLabel();
+  </script>
+</body>
+</html>
+    async function offlineAnalyze(){
+      const sym=(document.getElementById('symbol').value||'').trim();
+      if(!sym){ alert('请填写代码'); return; }
+      try{
+        const url=`http://localhost:8788/data/analyze?symbol=${encodeURIComponent(sym)}&source=local`;
+        const res=await fetch(url,{cache:'no-store'});
+        const j=await res.json();
+        if(j.error){ alert('离线分析失败：'+j.error); return; }
+        el.summary.textContent = j.summary||'';
+        const inds=j.indicators||{};
+        if(inds.last){ el.last.textContent=Number(inds.last).toFixed(2); }
+        if(inds.chg_pct_vs_p60!=null){ el.chg.textContent=inds.chg_pct_vs_p60.toFixed(2)+'%'; }
+        if(inds.vol!=null){ el.vol.textContent=(inds.vol*100).toFixed(1)+'%'; }
+        el.levels.textContent=`建议观察区间：${inds.low?.toFixed?.(2)} ~ ${inds.high?.toFixed?.(2)}`;
+      }catch(e){ alert('离线分析调用失败：'+e); }
+    }
+    document.getElementById('offline-analyze').addEventListener('click', offlineAnalyze);
+
+    function openFile(){ return new Promise((resolve)=>{ const input=document.createElement('input'); input.type='file'; input.accept='.csv,text/csv'; input.onchange=()=>{ const f=input.files[0]; const r=new FileReader(); r.onload=()=>resolve(r.result); r.readAsText(f,'utf-8'); }; input.click(); }); }
+    document.getElementById('import-csv').addEventListener('click', async ()=>{
+      const sym=(document.getElementById('symbol').value||'').trim(); if(!sym){ alert('请填写代码'); return; }
+      try{ const content=await openFile(); const res=await fetch(`http://localhost:8788/data/import_csv?symbol=${encodeURIComponent(sym)}`,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content }) }); const j=await res.json(); if(j.error){ alert('导入失败：'+j.error); } else { alert(`导入成功：${j.imported} 行`); } }
+      catch(e){ alert('导入调用失败：'+e); }
+    });

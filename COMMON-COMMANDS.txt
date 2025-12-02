@@ -1,0 +1,68 @@
+AlphaCouncil 常用命令速查（Windows PowerShell）
+
+[构建与部署]
+- 一键更新（清理+打包+复制到 ABC）：
+  powershell -ExecutionPolicy Bypass -File ABC\scripts\update_exe.ps1
+- 仅打包并复制到 ABC：
+  powershell -ExecutionPolicy Bypass -File ABC\scripts\build_exe.ps1 -DeployToABC
+- 清理构建产物：
+  powershell -ExecutionPolicy Bypass -File ABC\scripts\clean_build.ps1
+
+[开发模式]
+- 启动静态站、LLM代理与数据网关（默认端口5173/8787/8788）：
+  powershell -ExecutionPolicy Bypass -File ABC\scripts\run_dev.ps1 -ServeStatic:$true -RunLLMProxy:$true -RunDataGateway:$true -RunLauncher:$false
+- 指定Python解释器示例：
+  powershell -ExecutionPolicy Bypass -File ABC\scripts\run_dev.ps1 -PythonExe "C:\\Python312\\python.exe"
+
+[预览与服务]
+- 本地预览页面（在 ABC/app/ui 目录中执行）：
+  python -m http.server 5173
+  浏览器打开： http://localhost:5173/alpha-dashboard.html
+  提示：如页面仍请求旧地址（localhost:8080），按 Ctrl+F5 强刷或清缓存；前端已内置兜底自动切换到 8788。
+- 启动LLM代理：
+  python ABC\services\llm-proxy.py
+- 启动数据网关：
+  python ABC\services\data-gateway.py 8788
+
+[环境变量设置]
+- Alpha Vantage API Key（临时）：
+  $Env:ALPHAVANTAGE_API_KEY = "your_key"
+- Alpha Vantage API Key（永久）：
+  setx ALPHAVANTAGE_API_KEY "your_key"
+- （可选）LLM密钥：
+  setx DEEPSEEK_API_KEY "sk-xxxx"
+  setx OPENAI_API_KEY "sk-xxxx"
+
+[数据网关测试]
+- 实时行情：
+  curl.exe -s "http://localhost:8788/data/quote?symbol=IBM"
+- 历史日线并保存到SQLite：
+  curl.exe -s "http://localhost:8788/data/history?symbol=IBM&save=true"
+- 基本面概览：
+  curl.exe -s "http://localhost:8788/data/fundamentals?symbol=IBM"
+- 新闻舆情：
+  curl.exe -s "http://localhost:8788/data/news?symbol=IBM"
+
+[WebSocket推送]
+- 启动数据网关后，WS服务默认在 8789：
+  ws://localhost:8789/ws/quote?symbol=IBM
+- 前端切换到“WebSocket推送”时会自动填入该地址；若WS多次失败，前端会回退到HTTP轮询。
+
+[统一配置接口]
+- 读取当前配置：
+  curl.exe -s "http://localhost:8788/config"
+- 写入默认仪表板参数（示例）：
+  curl.exe -s -X POST -H "Content-Type: application/json" -d '{
+    "dashboardDefaultSymbol":"001203",
+    "dashboardSource":"http",
+    "dashboardUrl":"http://localhost:8788/data/quote?symbol=001203",
+    "dashboardInterval":2000,
+    "dashboardSimple":true
+  }' "http://localhost:8788/config"
+
+[版本与图标]
+- 修改版本号：编辑 ABC\build\VERSION（例如 0.1.1），然后：
+  powershell -ExecutionPolicy Bypass -File ABC\scripts\update_exe.ps1
+- 自定义图标：将 icon.ico 放到 ABC\build\ 后打包。
+
+说明：以上命令均在 d:\\Trae 目录中执行。如果端口冲突可调整参数：-StaticPort、-LLMPort、-DataPort。

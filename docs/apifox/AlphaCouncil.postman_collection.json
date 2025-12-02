@@ -1,0 +1,116 @@
+{
+  "info": {
+    "name": "AlphaCouncil Local API",
+    "schema": "https://schema.postman.com/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8788" },
+    { "key": "llm_base_url", "value": "http://localhost:8787" },
+    { "key": "symbol", "value": "IBM" },
+    { "key": "llm_model", "value": "gpt-4o-mini" }
+  ],
+  "item": [
+    {
+      "name": "GET /config",
+      "request": { "method": "GET", "url": "{{base_url}}/config" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.test('has masked keys', function () {",
+              "  pm.expect(json).to.have.property('alphaKey_mask');",
+              "  pm.expect(json).to.have.property('llmKey_mask');",
+              "  pm.expect(json.alphaKey_mask).to.be.a('string');",
+              "  pm.expect(json.llmKey_mask).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /config (update non-sensitive)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"llmModel\": \"{{llm_model}}\",\n  \"dashboardDefaultSymbol\": \"{{symbol}}\",\n  \"dashboardInterval\": \"Daily\",\n  \"dashboardSimple\": true\n}"
+        },
+        "url": "{{base_url}}/config"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.test('write ok', function () { pm.expect(json.status).to.eql('ok'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /data/quote?symbol",
+      "request": { "method": "GET", "url": "{{base_url}}/data/quote?symbol={{symbol}}" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('is object', function () { pm.expect(pm.response.json()).to.be.an('object'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /data/history",
+      "request": { "method": "GET", "url": "{{base_url}}/data/history?symbol={{symbol}}&interval=Daily" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('is array or object', function () { var j = pm.response.json(); pm.expect(['object','array']).to.include(Array.isArray(j) ? 'array' : typeof j); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /llm chat",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"{{llm_model}}\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n    {\"role\": \"user\", \"content\": \"Say hello\"}\n  ]\n}"
+        },
+        "url": "{{llm_base_url}}/llm"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

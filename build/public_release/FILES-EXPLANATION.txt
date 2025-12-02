@@ -1,0 +1,40 @@
+项目目录与文件用途说明（ABC）
+
+目录结构（关键部分）：
+- app/launcher.py
+  用途：桌面启动器后端（PyWebview/PyInstaller集成），负责本地HTTP代理与UI载入。
+
+- app/ui/index.html
+  用途：项目首页（静态资源）。已从根目录迁移至ABC/app/ui。
+
+- app/ui/alpha-dashboard.html
+  用途：核心前端页面（Alpha Dashboard）。
+
+- services/llm-proxy.py
+  用途：独立的本地LLM代理服务，支持单/多模型聚合与环境变量读取API Key。
+
+- services/README.md
+  用途：services目录的说明文件，约定用于放置后端/适配器代码。
+
+- build/requirements.txt
+  用途：打包与运行时依赖声明（例如pywebview、pyinstaller、requests）。
+
+- README.md
+  用途：项目总览说明，包含API Key环境变量配置与使用指南。
+
+- docs/manual/README.md
+  用途：产品/设备操作手册目录说明（HTML/PDF），如manual-qr-a5.html等。
+
+- docs/machine/README.md
+  用途：设备资料目录说明（如伺服冲床资料）。
+
+- docs/notes/README.md
+  用途：工程笔记/公式说明目录说明。
+
+- data/algorithms/bending/README.md
+  用途：折弯机相关算法数据与报告目录说明（Excel/Markdown等）。
+
+使用约定：
+- 前端资源统一放在 app/ui 下；后端代理/适配器统一放在 services 下。
+- 打包相关脚本与依赖统一放在 build 下；文档与资料归档于 docs 与 data 下。
+- 仅 ABC 目录为工程主目录；build/dist 等构建产物目录不建议直接修改源码。

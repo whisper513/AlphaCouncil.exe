@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>21寸 HMI 布局示例</title>
+  <style>
+    :root {
+      --bg: #fff;
+      --text: #111;
+      --muted: #666;
+      --primary: #1677ff;
+      --danger: #ff4d4f;
+      --space-8: 8px; --space-16: 16px; --space-24: 24px; --space-32: 32px;
+      --radius-8: 8px; --radius-12: 12px;
+      --panel-w: 360px; --side-w: 88px; --bar-h: 64px;
+      --frame: #1a1a1a; /* 黑框颜色（深灰） */
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Arial;}
+    .hmi {
+      display: grid;
+      grid-template:
+        "top    top   top"   var(--bar-h)
+        "side   main  panel" 1fr
+        "bottom bottom bottom" var(--bar-h)
+        / var(--side-w) 1fr var(--panel-w);
+      height: 100vh;
+    }
+    header.topbar { grid-area: top; display:flex; align-items:center; gap:var(--space-16);
+      padding: 0 var(--space-16); border-bottom: 1px solid #eee; }
+    .brand { font-size:18px; font-weight:600; }
+    .status { margin-left:auto; display:flex; gap:var(--space-16); align-items:center; }
+    .alarm-banner { grid-column: 1 / -1; background: var(--danger); color:#fff;
+      padding: 4px var(--space-16); font-weight:600; display:none; }
+
+    aside.sidebar { grid-area: side; border-right:1px solid #eee; padding: var(--space-16) 0;
+      display:flex; flex-direction:column; gap:var(--space-8); }
+    .nav-btn { height:48px; display:flex; align-items:center; padding:0 var(--space-16); cursor:pointer; }
+    .nav-btn:hover { background:#f5f5f5; }
+
+    main.workspace { grid-area: main; padding: var(--space-24); overflow:auto; }
+    .black-frame {
+      background: var(--frame);
+      border-radius: var(--radius-12);
+      padding: var(--space-16);
+      height: 100%;
+      display:flex; flex-direction:column; gap:var(--space-16);
+    }
+    .black-frame .inner {
+      background: var(--bg);
+      border-radius: var(--radius-8);
+      padding: var(--space-24);
+      flex:1; display:grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-24);
+      box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    }
+    .kpi { background:#fafafa; border:1px solid #eee; border-radius: var(--radius-8);
+      padding: var(--space-16); }
+    .kpi .value { font-size:24px; font-weight:700; }
+
+    aside.panel { grid-area: panel; border-left:1px solid #eee; padding: var(--space-16);
+      display:flex; flex-direction:column; gap:var(--space-16); }
+    .card { border:1px solid #eee; border-radius: var(--radius-8); padding: var(--space-16); }
+
+    footer.bottombar { grid-area: bottom; border-top:1px solid #eee; display:flex;
+      align-items:center; justify-content:flex-end; gap:var(--space-16); padding:0 var(--space-16); }
+    .btn { height:44px; padding:0 var(--space-16); border-radius: var(--radius-8); border:1px solid #ddd; background:#fff; cursor:pointer; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="hmi">
+    <header class="topbar">
+      <div class="brand">设备HMI</div>
+      <div class="status">
+        <span>模式：自动</span>
+        <span>联机</span>
+        <span>用户：Operator</span>
+        <span>12:30</span>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="nav-btn">监控</div>
+      <div class="nav-btn">工艺</div>
+      <div class="nav-btn">参数</div>
+      <div class="nav-btn">报警</div>
+      <div class="nav-btn">维护</div>
+      <div class="nav-btn">日志</div>
+    </aside>
+
+    <main class="workspace">
+      <section class="black-frame">
+        <div class="inner">
+          <div class="kpi"><div>产量</div><div class="value">1,280</div></div>
+          <div class="kpi"><div>节拍</div><div class="value">2.4s</div></div>
+          <div class="kpi"><div>合格率</div><div class="value">99.2%</div></div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="panel">
+      <div class="card">报警列表（最近）</div>
+      <div class="card">快速参数</div>
+      <div class="card">帮助提示</div>
+    </aside>
+
+    <footer class="bottombar">
+      <button class="btn">返回</button>
+      <button class="btn">确认</button>
+      <button class="btn primary">启动</button>
+    </footer>
+  </div>
+</body>
+</html>

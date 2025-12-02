@@ -1,0 +1,11 @@
+{
+  "alphaKey": "<YOUR_ALPHA_VANTAGE_KEY>",
+  "llmEndpoint": "https://api.deepseek.com/v1/chat/completions",
+  "llmModel": "deepseek-chat",
+  "llmKey": "<YOUR_LLM_API_KEY>",
+  "dashboardDefaultSymbol": "000592",
+  "dashboardSource": "http",
+  "dashboardInterval": 1500,
+  "dashboardSimple": false
+}
+

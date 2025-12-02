@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.DS_Store
+
+# Build outputs
+dist/
+*.bak
+AlphaCouncil.exe
+
+# Data & logs (sensitive)
+data/stocks.db
+data/logs/
+
+# Local config containing secrets
+config/app.json
+

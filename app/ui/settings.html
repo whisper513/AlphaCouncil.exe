@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AlphaCouncil 设置</title>
+  <style>
+    :root{ --bg:#0b1220; --card:#111a2c; --border:#1e2a42; --muted:#8aa0c2; --text:#e9efff; }
+    *{box-sizing:border-box} html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,Arial}
+    .page{max-width:960px;margin:0 auto;padding:20px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+    h2{margin:0 0 10px 0;font-size:16px}
+    label{display:flex;align-items:center;gap:8px;margin:6px 0}
+    input,select,button{background:#0d1730;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+    .pill{background:#0e1a30;border:1px solid var(--border);border-radius:999px;padding:4px 10px;color:var(--muted);margin-left:8px}
+    .mono{font-family:ui-monospace,Consolas,Menlo,monospace;color:#cfe1ff}
+    /* 顶部导航条 */
+    .topbar{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
+    .topbar .brand{font-weight:600;letter-spacing:0.2px}
+    .topbar nav{display:flex;gap:6px}
+    .topbar nav a{color:var(--text);text-decoration:none;padding:6px 10px;border-radius:8px}
+    .topbar nav a:hover{background:#0d1730}
+  </style>
+</head>
+  <body>
+  <div class="topbar">
+    <div class="brand">AlphaCouncil</div>
+    <nav>
+      <a href="alpha-dashboard.html">仪表板</a>
+      <a href="settings.html">设置</a>
+      <a href="login.html">登录</a>
+    </nav>
+  </div>
+  <div class="page">
+    <h1>设置</h1>
+
+    <div class="card">
+      <h2>LLM 配置 <span class="pill">用于生成参考结论</span></h2>
+      <label>接口地址<input id="llm-endpoint" style="min-width:360px" placeholder="如 https://api.deepseek.com/v1/chat/completions"></label>
+      <label>模型名称<input id="llm-model" placeholder="如 whisper"></label>
+      <label>API Key<input id="llm-key" type="password" placeholder="请输入你的密钥"></label>
+      <div class="mono small" id="llm-key-mask" style="margin-top:4px;color:#8aa0c2">已保存密钥：未设置</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="save-llm">保存</button>
+        <span id="llm-save-tip" class="pill">—</span>
+      </div>
+      <div class="mono" style="margin-top:8px">说明：密钥会保存到本地浏览器与后端配置文件（ABC/config/app.json），仅在本机使用，不会上传到互联网。</div>
+    </div>
+
+    <div class="card">
+      <h2>Alpha Vantage API 配置 <span class="pill">用于行情与基本面</span></h2>
+      <label>API Key<input id="alpha-key" type="password" placeholder="请输入你的密钥"></label>
+      <div class="mono small" id="alpha-key-mask" style="margin-top:4px;color:#8aa0c2">已保存密钥：未设置</div>
+      <label>测试代码<input id="alpha-test-symbol" placeholder="如 IBM"></label>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="save-alpha">保存</button>
+        <button id="test-alpha">验证API Key</button>
+        <span id="alpha-tip" class="pill">—</span>
+      </div>
+      <div class="mono" style="margin-top:8px">说明：后端默认从系统环境变量读取 Key。此处保存的 Key 仅用于浏览器端测试。</div>
+    </div>
+
+    <div class="card">
+      <h2>数据网关设置 <span class="pill">前端行情接入</span></h2>
+      <label>接入方式
+        <select id="gw-source">
+          <option value="http">HTTP 轮询</option>
+          <option value="ws">WebSocket 推送</option>
+        </select>
+      </label>
+      <label>网关地址<input id="gw-url" style="min-width:360px" placeholder="如 http://localhost:8788/data/quote 或 ws://localhost:8789/ws/quote"></label>
+      <label>轮询频率(ms)<input id="gw-interval" type="number" min="500" step="100" placeholder="建议≥1500，仅HTTP有效"></label>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="save-gw">保存</button>
+        <span id="gw-tip" class="pill">—</span>
+      </div>
+      <div class="mono" style="margin-top:8px">提示：选择“WebSocket 推送”时，前端会自动尝试连接并在失败时回退到HTTP轮询。默认端口为HTTP端口+1（如 8788 → 8789）。</div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="window.open('alpha-dashboard.html','_self')">返回仪表板</button>
+    </div>
+  </div>
+
+  <script>
+    const STORE='AlphaCouncil.cfg.v1';
+    function maskStars(n){ return n>0 ? '*'.repeat(Math.min(n,24)) + (n>24?'…':'') : '未设置'; }
+    async function load(){ const cfg=JSON.parse(localStorage.getItem(STORE)||'{}');
+      // 推荐默认值（可被登录绑定覆盖）
+      let changed=false;
+      if(!cfg.llmEndpoint){ cfg.llmEndpoint='https://api.deepseek.com/v1/chat/completions'; changed=true; }
+      if(!cfg.llmModel){ cfg.llmModel='whisper'; changed=true; }
+      document.getElementById('llm-endpoint').value=cfg.llmEndpoint||'';
+      document.getElementById('llm-model').value=cfg.llmModel||'';
+      // 出于安全考虑，不自动在输入框中填充已保存的密钥；并清除本地旧残留
+      if(cfg.llmKey){ delete cfg.llmKey; changed=true; }
+      document.getElementById('llm-key').value='';
+      document.getElementById('llm-key-mask').textContent = '已保存密钥：' + maskStars(0);
+      if(changed){ localStorage.setItem(STORE, JSON.stringify(cfg)); }
+      // 清除本地Alpha Key残留，仅后端保存
+      if(cfg.alphaKey){ delete cfg.alphaKey; changed=true; }
+      document.getElementById('alpha-key').value='';
+      document.getElementById('alpha-key-mask').textContent = '已保存密钥：' + maskStars(0);
+      document.getElementById('alpha-test-symbol').value=cfg.alphaTestSymbol||'IBM';
+
+      // 数据网关前端配置（供仪表板使用）
+      document.getElementById('gw-source').value = cfg.source||'http';
+      document.getElementById('gw-url').value = cfg.url||'';
+      document.getElementById('gw-interval').value = cfg.interval||1500;
+
+      // 从后端读取统一配置并展示（敏感字段仅遮罩）
+      try{
+        const res = await fetch('http://localhost:8788/config');
+        if(res.ok){ const j = await res.json();
+          if(j.llmEndpoint){ document.getElementById('llm-endpoint').value = j.llmEndpoint; }
+          if(j.llmModel){ document.getElementById('llm-model').value = j.llmModel; }
+          if(j.llmKey_mask){ document.getElementById('llm-key-mask').textContent = '已保存密钥：' + j.llmKey_mask; }
+          if(j.alphaKey_mask){ document.getElementById('alpha-key-mask').textContent = '已保存密钥：' + j.alphaKey_mask; document.getElementById('alpha-tip').textContent = '已绑定（服务端）'; }
+        }
+      }catch(e){ /* 后端可能未启动，忽略 */ }
+    }
+    function save(part){ const prev=JSON.parse(localStorage.getItem(STORE)||'{}'); const next={...prev,...part}; localStorage.setItem(STORE, JSON.stringify(next)); }
+    document.getElementById('save-llm').addEventListener('click',async ()=>{
+      const endpoint=document.getElementById('llm-endpoint').value.trim();
+      const model=document.getElementById('llm-model').value.trim();
+      const key=document.getElementById('llm-key').value.trim();
+      // 仅保存非敏感项到本地
+      save({ llmEndpoint:endpoint, llmModel:model });
+      document.getElementById('llm-save-tip').textContent='已保存';
+      document.getElementById('llm-key-mask').textContent = '已保存密钥：' + maskStars(key.length);
+      // 同步到后端配置
+      try{ const res = await fetch('http://localhost:8788/config',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ llmEndpoint:endpoint, llmModel:model, llmKey:key }) }); if(res.ok){ document.getElementById('llm-save-tip').textContent='已保存（含服务端）'; } }catch(e){ /* 忽略错误 */ }
+    });
+    document.getElementById('save-alpha').addEventListener('click',async ()=>{
+      const akey=document.getElementById('alpha-key').value.trim();
+      // 本地仅保存非敏感项
+      save({ alphaTestSymbol:document.getElementById('alpha-test-symbol').value.trim() });
+      document.getElementById('alpha-tip').textContent='已保存';
+      document.getElementById('alpha-key-mask').textContent='已保存密钥：' + maskStars(akey.length);
+      // 同步到后端配置
+      try{ const res = await fetch('http://localhost:8788/config',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ alphaKey: akey }) }); if(res.ok){ document.getElementById('alpha-tip').textContent='已保存（含服务端）'; } }catch(e){ /* 忽略错误 */ }
+    });
+    document.getElementById('save-gw').addEventListener('click',()=>{
+      const src=document.getElementById('gw-source').value;
+      const url=document.getElementById('gw-url').value.trim();
+      const itv=parseInt(document.getElementById('gw-interval').value||'1500',10);
+      save({ source:src, url:url, interval:itv });
+      document.getElementById('gw-tip').textContent='已保存（供仪表板使用）';
+    });
+    document.getElementById('test-alpha').addEventListener('click', async ()=>{
+      const key=(document.getElementById('alpha-key').value||'').trim(); const sym=(document.getElementById('alpha-test-symbol').value||'IBM').trim(); if(!key){ alert('请填写 AlphaVantage Key'); return; }
+      try{ const url=`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(sym)}&apikey=${key}`; const res=await fetch(url); const j=await res.json();
+        if(j?.Note || j?.Information){ document.getElementById('alpha-tip').textContent='配额受限：'+(j.Note||j.Information); return; }
+        const price=parseFloat(j?.['Global Quote']?.['05. price']||0);
+        document.getElementById('alpha-tip').textContent = isFinite(price)&&price>0 ? `验证成功，价格 ${price}` : '验证失败：返回为空或格式异常'; }
+      catch(e){ document.getElementById('alpha-tip').textContent='网络问题或上游不可达：'+e; }
+    });
+    load();
+  </script>
+</body>
+</html>

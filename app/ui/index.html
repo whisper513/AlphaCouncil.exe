@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>成果预览｜电子说明书扫码领取</title>
+  <style>
+    :root {
+      --brand: #2b7cff;
+      --accent: #12854a;
+      --text: #0f1d2a;
+      --muted: #4b6580;
+      --bg: #f6f9fd;
+      --card: #ffffff;
+      --border: #e6eef7;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:"Microsoft Yahei","Segoe UI",Roboto,Arial,sans-serif; color:var(--text); background:var(--bg); }
+    .container { max-width: 1080px; margin: 0 auto; padding: 24px; }
+    .hero { background: linear-gradient(180deg,#ffffff 0%,#f2f7ff 100%); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:0 10px 28px rgba(13,51,88,.08); }
+    .title { font-size:28px; font-weight:800; letter-spacing:.5px; }
+    .subtitle { color:var(--muted); margin-top:6px; }
+    .actions { margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; }
+    .btn { display:inline-block; padding:10px 16px; border-radius:999px; text-decoration:none; font-weight:700; }
+    .btn.primary { background:var(--brand); color:#fff; box-shadow:0 6px 16px rgba(43,124,255,.35); }
+    .btn.accent { background:var(--accent); color:#fff; box-shadow:0 6px 16px rgba(18,133,74,.35); }
+    .btn.outline { border:1px solid var(--border); color:var(--muted); background:#fff; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:18px; }
+    .card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:16px; }
+    iframe { width:100%; height:640px; border:1px solid var(--border); border-radius:12px; background:#fff; }
+    ul { margin: 8px 0; padding-left: 18px; color:var(--muted); }
+    .footer { margin-top:18px; color:var(--muted); font-size:12px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } iframe{ height:520px; } }
+  </style>
+  <script>
+    (function(){
+      try {
+        var params = new URLSearchParams(location.search);
+        // 支持两种参数：?hmi=1 或 ?view=hmi，自动跳转到 HMI 布局示例
+        if (params.has('hmi') || params.get('view') === 'hmi') {
+          location.replace('hmi-demo.html');
+        }
+      } catch(e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div class="title">成果预览｜电子说明书扫码领取</div>
+      <div class="subtitle">这是网站首页预览：包含A5一页纸引导卡的在线预览、打印与定制入口。</div>
+      <div class="actions">
+        <a class="btn primary" href="manual-qr-a5.html" target="_blank">打开一页纸卡片</a>
+        <a class="btn accent" href="manual-qr-a5.html" target="_blank">在卡片中打印为PDF</a>
+        <a class="btn outline" href="#how">定制/替换说明</a>
+        <a class="btn primary" href="hmi-demo.html" target="_blank">打开HMI布局示例</a>
+        <a class="btn outline" href="/?view=hmi">直接在首页展示HMI</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>在线预览（嵌入）</h3>
+        <iframe src="manual-qr-a5.html" title="一页纸卡片预览"></iframe>
+      </div>
+      <div class="card" id="how">
+        <h3>快速定制与打印</h3>
+        <ul>
+          <li>替换链接：在 <code>manual-qr-a5.html</code> 中将 <code>MANUAL_URL_HERE</code> 改为你的说明书短链或落地页。</li>
+          <li>备用二维码：卡片已包含小号备用二维码与链接，现场贴纸不可用时可直接使用。</li>
+          <li>打印：点击卡片页面右下角“打印为PDF”，选择纸张 <code>A5</code>；或浏览器 <code>Ctrl+P</code>。</li>
+          <li>颜色：如需换品牌色，我可将颜色抽成CSS变量统一替换。</li>
+        </ul>
+        <h3>推荐文案（参与感）</h3>
+        <ul>
+          <li>需要说明书？请扫主机上的二维码</li>
+          <li>你的扫码，为地球轻一克</li>
+          <li>少纸多绿，说明书和我们都在线</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">最近更新：2025-10｜预览文件：manual-qr-a5.html｜如需批量机型二维码页，请联系我生成。</div>
+  </div>
+</body>
+</html>

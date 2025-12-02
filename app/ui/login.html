@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>登录 - AlphaCouncil</title>
+  <style>
+    :root{ --bg:#0b1220; --card:#111a2c; --border:#1e2a42; --muted:#8aa0c2; --text:#e9efff; }
+    *{box-sizing:border-box} html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,Arial}
+    .page{max-width:480px;margin:0 auto;padding:20px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:16px}
+    input,button{background:#0d1730;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px}
+    label{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+    .pill{background:#0e1a30;border:1px solid var(--border);border-radius:999px;padding:4px 10px;color:var(--muted)}
+    /* 顶部导航条 */
+    .topbar{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
+    .topbar .brand{font-weight:600;letter-spacing:0.2px}
+    .topbar nav{display:flex;gap:6px}
+    .topbar nav a{color:var(--text);text-decoration:none;padding:6px 10px;border-radius:8px}
+    .topbar nav a:hover{background:#0d1730}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">AlphaCouncil</div>
+    <nav>
+      <a href="alpha-dashboard.html">仪表板</a>
+      <a href="settings.html">设置</a>
+      <a href="login.html">登录</a>
+    </nav>
+  </div>
+  <div class="page">
+    <h1>登录</h1>
+    <div class="card">
+      <label>用户ID<input id="uid" placeholder="请输入用户ID" value="Test"/></label>
+      <label>密码<input id="pwd" type="password" placeholder="请输入密码"/></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="login">登录并绑定密钥</button>
+        <span id="tip" class="pill">—</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="pill">登录后将写入后端统一配置：Alpha Key 与 LLM配置</div>
+      <div style="margin-top:8px;color:#8aa0c2">说明：密钥仅写入后端，本地不缓存；设置页以遮罩显示。</div>
+    </div>
+  </div>
+  <script>
+    const STORE='AlphaCouncil.cfg.v1';
+    // 安全策略：密钥不写入localStorage，仅在后端绑定与保存
+    const BINDS={
+      userId:'Test',
+      password:'whisper@1998',
+      alphaKey:'E4B41C6A00VZPUSE',
+      llmEndpoint:'https://api.deepseek.com/v1/chat/completions',
+      llmModel:'whisper',
+      llmKey:'sk-7ab75daad33b462facfff85a73eb28fb'
+    };
+
+    function save(part){ const prev=JSON.parse(localStorage.getItem(STORE)||'{}'); const next={...prev,...part}; localStorage.setItem(STORE, JSON.stringify(next)); }
+    document.getElementById('login').addEventListener('click',async ()=>{
+      const uid=document.getElementById('uid').value.trim();
+      const pwd=document.getElementById('pwd').value.trim();
+      if(uid!==BINDS.userId || pwd!==BINDS.password){ document.getElementById('tip').textContent='账号或密码错误'; return; }
+      // 本地仅保存非敏感标识
+      save({ currentUser: uid });
+      // 同步到后端统一配置
+      try {
+        const res = await fetch('http://localhost:8788/config', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            alphaKey: BINDS.alphaKey,
+            llmEndpoint: BINDS.llmEndpoint,
+            llmModel: BINDS.llmModel,
+            llmKey: BINDS.llmKey
+          })
+        });
+        if(res.ok){ document.getElementById('tip').textContent='绑定成功（含服务端）'; }
+        else { document.getElementById('tip').textContent='本地绑定成功，服务端同步失败'; }
+      } catch(e){ document.getElementById('tip').textContent='本地绑定成功（服务端未连接）'; }
+      setTimeout(()=>{ window.open('settings.html','_self'); }, 600);
+    });
+  </script>
+</body>
+</html>
