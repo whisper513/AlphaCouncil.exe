@@ -1,0 +1,19 @@
+name: release-on-tag
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build_and_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: zip
+        run: zip -r AlphaCouncil-AI.zip . -x "config/app.json" "data/stocks.db" "data/logs/*" "dist/*" "AlphaCouncil.exe" "*.bak" "**/__pycache__/*"
+      - name: release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: AlphaCouncil-AI.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
